@@ -68,9 +68,6 @@ Run `python -m evals.run_evals`. It scores 15 labelled answers twice each (stron
 
 **Limitation:** the eval is easy. Strong answers scored 5 and weak ones 1 or 2, so it checks the extremes and not borderline answers, and one non-native case is not enough to prove fairness. Next: add partially correct answers (expected score about 3) and more non-native cases, then compare against 2 to 3 human mentors on real answers.
 
-## 7. What I learned from usage
-_After sharing with students, add 3 findings from the `/admin` dashboard (for example: where users drop off, fairness rate, flag rate) and what you did about each._
-
 ## 8. Limitations and roadmap
 - LLM scoring is not ground truth. Next: compare against ratings from 2 to 3 human mentors on 20 answers.
 - Roadmap (sequenced by validation): accounts and cross-device history, voice answers, **coding questions** (in-browser editor with hidden test cases; sandboxing design in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)), spaced repetition on missed points, mentor hand-off, Postgres for durable storage.
