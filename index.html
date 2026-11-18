@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PrepPilot: AI mock interview coach</title>
+<style>
+:root{--bg:#f7f6f2;--card:#fff;--tx:#1f2328;--mut:#6b7280;--ac:#4f46e5;--bd:#e4e2da;--g:#15803d;--r:#b91c1c;--y:#a16207}
+@media (prefers-color-scheme:dark){:root{--bg:#15161a;--card:#1e2026;--tx:#e8e8ea;--mut:#9ca3af;--ac:#818cf8;--bd:#2d3038;--g:#4ade80;--r:#f87171;--y:#facc15}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.5 system-ui,sans-serif}
+main{max-width:760px;margin:0 auto;padding:24px 16px 48px}h1{margin:0}.mut{color:var(--mut);font-size:.9rem}
+select,textarea,input{width:100%;padding:10px;border:1px solid var(--bd);border-radius:10px;background:var(--card);color:var(--tx);font:inherit;margin:6px 0 12px}
+input[type=checkbox]{width:auto;margin:0 8px 0 0}textarea{min-height:150px}textarea.sm{min-height:70px}
+button{font:inherit;padding:10px 18px;border-radius:10px;border:1px solid var(--ac);background:var(--ac);color:#fff;font-weight:600;cursor:pointer;margin:4px 8px 4px 0}
+button.s{background:var(--card);color:var(--tx);border-color:var(--bd);font-weight:400}button:disabled{opacity:.5}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:16px;margin:14px 0}
+.bar{height:8px;background:var(--bd);border-radius:9px;overflow:hidden}.bar i{display:block;height:100%;background:var(--ac)}
+.tag{display:inline-block;font-size:.75rem;padding:2px 8px;border-radius:99px;border:1px solid var(--bd);margin-right:6px;color:var(--mut)}
+.big{font-size:3rem;font-weight:700;margin:0}.err{color:var(--r)}.up{color:var(--g)}.warn{color:var(--y)}.fair input{width:60%;display:inline-block;margin:0 6px 0 0}
+.nocopy{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+@media print{.nocopy,button,#st,.noprint{display:none}}
+</style></head><body><main>
+<h1>PrepPilot</h1><p class="mut">Practice interviews with an AI coach. Adaptive questions, follow-ups, instant feedback, a 7-day plan.</p>
+<div id="v"></div><div id="st" class="mut"></div></main>
+<script>
+const $=id=>document.getElementById(id);let S={id:null,total:5},T=null,onVis=null;
+const UID=(()=>{let u=null;try{u=localStorage.getItem("pp_uid")}catch(e){}
+if(!u){u=(crypto.randomUUID?crypto.randomUUID():Date.now().toString(16)+"-"+Math.random().toString(16).slice(2));try{localStorage.setItem("pp_uid",u)}catch(e){}}return u})();
+function el(t,c,x){const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e}
+async function api(p,b,m){const o={method:m||(b?"POST":"GET"),headers:{"X-User-Id":UID}};if(b){o.headers["Content-Type"]="application/json";o.body=JSON.stringify(b)}
+const r=await fetch(p,o);if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(typeof e.detail==="string"?e.detail:"Please check your input.")}return r.json()}
+function busy(m){$("st").className="mut";$("st").textContent=m||""}
+function fail(e){$("st").className="err";$("st").textContent=e.message}
+function opt(sel,vals){vals.forEach(v=>sel.appendChild(Array.isArray(v)?new Option(v[1],v[0]):new Option(v,v)));return sel}
+function stopTracking(){if(T){clearInterval(T);T=null}if(onVis){document.removeEventListener("visibilitychange",onVis);onVis=null}}
+function noCopy(n){n.classList.add("nocopy");["copy","cut","dragstart","contextmenu","selectstart"].forEach(ev=>n.addEventListener(ev,e=>e.preventDefault()));return n}
+function answerBox(c,ph){const M={paste:0,tabs:0,keys:0,start:Date.now()};const a=el("textarea");a.placeholder=ph;a.setAttribute("spellcheck","false");a.setAttribute("autocomplete","off");const note=el("div","warn");
+const bp=e=>{e.preventDefault();M.paste++;note.textContent="Pasting is disabled. Please type your own answer."};
+a.addEventListener("paste",bp);a.addEventListener("drop",bp);a.addEventListener("contextmenu",e=>e.preventDefault());
+a.addEventListener("input",e=>{const it=e.inputType||"";if(/^insertFrom(Paste|Drop|Yank)/.test(it))M.paste++;else if(it.startsWith("insert"))M.keys+=(e.data||"").length||1});
+c.appendChild(a);c.appendChild(note);
+if(onVis)document.removeEventListener("visibilitychange",onVis);onVis=()=>{if(document.hidden)M.tabs++};document.addEventListener("visibilitychange",onVis);
+return{a,snap:()=>({paste_attempts:M.paste,tab_switches:M.tabs,keystrokes:M.keys,seconds:(Date.now()-M.start)/1000})}}
+function clock(c){const k=el("span","tag","0:00");c.appendChild(k);const t0=Date.now();T=setInterval(()=>{const s=Math.floor((Date.now()-t0)/1000);k.textContent=Math.floor(s/60)+":"+String(s%60).padStart(2,"0")},1000)}
+function lbl(c,t){c.appendChild(el("label",null,t))}
+async function home(){stopTracking();const v=$("v");v.textContent="";busy();const c=el("div","card");
+lbl(c,"Target role");const r=opt(el("select"),["Software Engineer (fresher)","Backend Engineer","Frontend Engineer","Data Analyst","Product Manager"]);c.appendChild(r);
+lbl(c,"Topic");const t=opt(el("select"),["Data structures and algorithms","CS fundamentals (OS, DBMS, networks)","System design basics","Behavioral and communication"]);c.appendChild(t);
+lbl(c,"Number of questions");const n=opt(el("select"),[[3,"3 (quick)"],[5,"5 (standard)"],[10,"10 (deep)"]]);n.value="5";c.appendChild(n);
+lbl(c,"Optional: your background (skills, projects) so questions fit you. No personal info please.");const cx=el("textarea","sm");cx.maxLength=1500;c.appendChild(cx);
+const fw=el("label");const cb=el("input");cb.type="checkbox";cb.checked=true;fw.appendChild(cb);fw.appendChild(document.createTextNode("Ask a follow-up question after each answer"));c.appendChild(fw);
+c.appendChild(el("p","mut","Interview rules: type your answers yourself. Copying questions and pasting answers is disabled, like in a real interview. Your answers are stored to track your progress; you can delete them anytime."));
+const b=el("button",null,"Start mock interview");b.onclick=async()=>{b.disabled=true;busy("Preparing your first question…");try{const d=await api("/api/sessions",{role:r.value,topic:t.value,n_questions:+n.value,followups:cb.checked,context:cx.value.trim()});S={id:d.session_id,total:d.total};ask(d.turn)}catch(e){fail(e);b.disabled=false}};c.appendChild(b);v.appendChild(c);
+try{const g=await api("/api/progress");if(g.points.length){const p=el("div","card");p.appendChild(el("b",null,"Your progress"));
+if(g.delta!=null){p.appendChild(el("p",g.delta>=0?"up":"warn",(g.delta>0?"+":"")+g.delta+" points since your last "+g.points[g.points.length-1].topic+" session"))}
+else p.appendChild(el("p","mut","Complete another session on the same topic to see your change."));
+p.appendChild(trendChart(g.points));
+g.points.slice().reverse().forEach(x=>{const d=el("div");d.appendChild(el("span","mut",x.topic+": "+x.readiness+"/100"));const bar=el("div","bar");const i=el("i");i.style.width=x.readiness+"%";bar.appendChild(i);d.appendChild(bar);p.appendChild(d)});
+const del=el("button","s","Delete my data");del.onclick=async()=>{if(confirm("Delete all your sessions and answers? This cannot be undone.")){try{await api("/api/me",null,"DELETE");home()}catch(e){fail(e)}}};p.appendChild(del);v.appendChild(p)}}catch(e){}}
+function trendChart(pts){const NS="http://www.w3.org/2000/svg",W=300,H=80,P=10,svg=document.createElementNS(NS,"svg");svg.setAttribute("viewBox","0 0 "+W+" "+H);svg.setAttribute("width","100%");svg.setAttribute("role","img");svg.setAttribute("aria-label","Readiness trend: "+pts.map(x=>x.readiness).join(", "));
+const X=i=>pts.length===1?W/2:P+i*(W-2*P)/(pts.length-1),Y=r=>H-P-r/100*(H-2*P);
+const mk=(t,a)=>{const n=document.createElementNS(NS,t);for(const k in a)n.setAttribute(k,a[k]);svg.appendChild(n);return n};
+mk("line",{x1:P,x2:W-P,y1:Y(0),y2:Y(0),stroke:"var(--bd)"});
+if(pts.length>1)mk("polyline",{points:pts.map((x,i)=>X(i)+","+Y(x.readiness)).join(" "),fill:"none",stroke:"var(--ac)","stroke-width":2});
+pts.forEach((x,i)=>{mk("circle",{cx:X(i),cy:Y(x.readiness),r:3.5,fill:"var(--ac)"})});return svg}
+function ask(t){stopTracking();const v=$("v");v.textContent="";busy();const c=el("div","card");
+c.appendChild(el("span","tag","Question "+t.idx+" of "+S.total));c.appendChild(el("span","tag","Difficulty "+t.difficulty+"/5"));clock(c);
+c.appendChild(noCopy(el("h2",null,t.question)));const box=answerBox(c,"Type your answer as you would say it in an interview…");
+const b=el("button",null,"Submit answer");b.onclick=async()=>{if(!box.a.value.trim())return;b.disabled=true;busy("Scoring your answer…");const integrity=box.snap();stopTracking();
+try{const d=await api("/api/sessions/"+S.id+"/answer",{answer:box.a.value.trim(),integrity});busy();scoreView(d)}catch(e){fail(e);b.disabled=false}};c.appendChild(b);v.appendChild(c)}
+const FLAGTXT={paste_attempt:"a paste attempt",left_tab:"leaving the tab",typed_less_than_written:"text that was not typed",answered_too_fast:"an unusually fast answer"};
+function flagNote(c,flags){const fl=(flags||[]).filter(f=>FLAGTXT[f]);if(fl.length)c.appendChild(el("p","warn","Integrity note: we noticed "+fl.map(f=>FLAGTXT[f]).join(", ")+". Your score is unchanged, but this is recorded in your report."))}
+function fairness(c,idx){const w=el("div","fair");w.appendChild(el("span","mut","Was this score fair? "));let rating=0;
+const send=async cm=>{try{await api("/api/sessions/"+S.id+"/feedback",{idx,rating,comment:cm||""})}catch(e){}};
+const mk=(txt,r)=>{const b=el("button","s",txt);b.style.padding="4px 10px";b.onclick=async()=>{rating=r;await send("");w.textContent="";w.appendChild(el("span","mut","Thanks! Add a comment (optional): "));const i=el("input");i.maxLength=500;const sb=el("button","s","Send");sb.onclick=async()=>{await send(i.value.trim());w.textContent="Thanks for the feedback!"};w.appendChild(i);w.appendChild(sb)};return b};
+w.appendChild(mk("👍",1));w.appendChild(mk("👎",-1));c.appendChild(w)}
+function scoreView(d){const v=$("v");v.textContent="";const s=d.score,c=el("div","card");c.appendChild(el("h2",null,"Score: "+d.turn_score+" / 5"));
+["correctness","depth","communication"].forEach(k=>{const w=el("div");w.appendChild(el("span","mut",k+": "+s[k]+"/5"));const bar=el("div","bar"),i=el("i");i.style.width=s[k]*20+"%";bar.appendChild(i);w.appendChild(bar);c.appendChild(w)});
+c.appendChild(el("p",null,s.feedback));if(s.missed_points.length){c.appendChild(el("b",null,"What you missed"));const u=el("ul");s.missed_points.forEach(m=>u.appendChild(el("li",null,m)));c.appendChild(u)}
+flagNote(c,d.integrity_flags);fairness(c,d.idx);
+const b=el("button",null,d.followup?"Answer the follow-up":d.done?"See my report":"Next question");b.onclick=()=>d.followup?followUp(d):(d.done?report():ask(d.next));c.appendChild(b);
+c.appendChild(el("p","mut","Model "+d.meta.model+" · "+d.meta.latency_s+"s · "+d.meta.tokens+" tokens"));v.appendChild(c)}
+function followUp(d){stopTracking();const v=$("v");v.textContent="";const c=el("div","card");c.appendChild(el("span","tag","Follow-up"));clock(c);
+c.appendChild(noCopy(el("h2",null,d.followup)));const box=answerBox(c,"Answer in 2 to 4 sentences…");
+const go=async skip=>{busy(skip?"":"Scoring your follow-up…");const integrity=box.snap();stopTracking();try{const r=await api("/api/sessions/"+S.id+"/followup",skip?{skip:true}:{answer:box.a.value.trim(),integrity});busy();followResult(r)}catch(e){fail(e);b.disabled=false;sk.disabled=false}};
+const b=el("button",null,"Submit");b.onclick=()=>{if(!box.a.value.trim())return;b.disabled=true;sk.disabled=true;go(false)};const sk=el("button","s","Skip");sk.onclick=()=>{b.disabled=true;sk.disabled=true;go(true)};
+c.appendChild(b);c.appendChild(sk);v.appendChild(c)}
+function followResult(r){const v=$("v");v.textContent="";const c=el("div","card");
+if(r.followup_score){c.appendChild(el("h2",null,"Follow-up: "+r.followup_score.quality+" / 5"));c.appendChild(el("p",null,r.followup_score.feedback))}else c.appendChild(el("h2",null,"Follow-up skipped"));
+flagNote(c,r.integrity_flags);const b=el("button",null,r.done?"See my report":"Next question");b.onclick=()=>r.done?report():ask(r.next);c.appendChild(b);v.appendChild(c)}
+function shareBox(path){const w=el("div","card noprint");w.appendChild(el("b",null,"Share your report card"));
+w.appendChild(el("p","mut","Creates a public link showing only your score, strengths and 7-day plan. Never your questions or answers. You can turn it off anytime."));
+const out=el("div");const render=p=>{out.textContent="";if(!p){const b=el("button",null,"Create share link");b.onclick=async()=>{try{const r=await api("/api/sessions/"+S.id+"/share",{});render(r.share_path)}catch(e){fail(e)}};out.appendChild(b);return}
+const url=location.origin+p,i=el("input");i.value=url;i.readOnly=true;out.appendChild(i);
+const cp=el("button",null,"Copy link");cp.onclick=async()=>{try{await navigator.clipboard.writeText(url);cp.textContent="Copied"}catch(e){i.select()}};out.appendChild(cp);
+if(navigator.share){const sh=el("button","s","Share…");sh.onclick=()=>navigator.share({title:"My PrepPilot report card",url}).catch(()=>{});out.appendChild(sh)}
+const off=el("button","s","Stop sharing");off.onclick=async()=>{try{await api("/api/sessions/"+S.id+"/share",null,"DELETE");render(null)}catch(e){fail(e)}};out.appendChild(off)};
+render(path);w.appendChild(out);return w}
+async function report(){busy("Building your report and study plan…");try{const d=await api("/api/sessions/"+S.id+"/report");busy();const v=$("v");v.textContent="";
+let c=el("div","card");c.appendChild(el("span","mut","Interview readiness"));c.appendChild(el("p","big",d.readiness+"/100"));c.appendChild(el("p",null,d.report.encouragement));
+c.appendChild(el("p",d.flagged_answers?"warn":"mut",d.flagged_answers?"Integrity: "+d.flagged_answers+" of "+d.turns.length+" answers were flagged, so treat this score with caution.":"Integrity: no flags. This score reflects answers you typed yourself."));v.appendChild(c);
+c=el("div","card");c.appendChild(el("b",null,"Strengths"));let u=el("ul");d.report.strengths.forEach(x=>u.appendChild(el("li",null,x)));c.appendChild(u);c.appendChild(el("b",null,"Work on"));u=el("ul");d.report.weaknesses.forEach(x=>u.appendChild(el("li",null,x)));c.appendChild(u);v.appendChild(c);
+c=el("div","card");c.appendChild(el("h2",null,"Your 7-day plan"));d.report.study_plan.forEach(p=>{c.appendChild(el("b",null,"Day "+p.day+": "+p.focus));const l=el("ul");p.tasks.forEach(x=>l.appendChild(el("li",null,x)));c.appendChild(l)});v.appendChild(c);
+const b=el("button","s","Practice again");b.onclick=home;v.appendChild(b);const pr=el("button","s","Save as PDF");pr.onclick=()=>window.print();v.appendChild(pr);v.appendChild(shareBox(d.share_path))}catch(e){fail(e)}}
+home();
+</script></body></html>

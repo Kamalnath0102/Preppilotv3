@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PrepPilot analytics</title>
+<style>
+:root{--bg:#f7f6f2;--card:#fff;--tx:#1f2328;--mut:#6b7280;--ac:#4f46e5;--bd:#e4e2da}
+@media (prefers-color-scheme:dark){:root{--bg:#15161a;--card:#1e2026;--tx:#e8e8ea;--mut:#9ca3af;--ac:#818cf8;--bd:#2d3038}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.5 system-ui,sans-serif}main{max-width:900px;margin:0 auto;padding:24px 16px 48px}
+input{padding:10px;border:1px solid var(--bd);border-radius:10px;background:var(--card);color:var(--tx);font:inherit}
+button{font:inherit;padding:10px 18px;border-radius:10px;border:1px solid var(--ac);background:var(--ac);color:#fff;font-weight:600;cursor:pointer}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:14px 0}.k{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px}
+.k b{display:block;font-size:1.6rem}.mut{color:var(--mut);font-size:.85rem}.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:16px;margin:14px 0}
+.row{display:flex;align-items:center;gap:8px;margin:4px 0}.row span:first-child{width:90px;font-size:.85rem;color:var(--mut)}.bar{flex:1;height:10px;background:var(--bd);border-radius:9px;overflow:hidden}.bar i{display:block;height:100%;background:var(--ac)}.err{color:#b91c1c}
+</style></head><body><main>
+<h1>PrepPilot analytics</h1><p class="mut">Enter the ADMIN_KEY you set on the server. The key is sent only to this server and not stored.</p>
+<input id="k" type="password" placeholder="Admin key"> <button id="go">Load</button><div id="msg" class="err"></div><div id="out"></div>
+</main><script>
+const $=id=>document.getElementById(id);
+function el(t,c,x){const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e}
+const pct=x=>x==null?"n/a":Math.round(x*100)+"%";const val=x=>x==null?"n/a":x;
+function kpi(g,l,v){const k=el("div","k");k.appendChild(el("b",null,String(v)));k.appendChild(el("span","mut",l));g.appendChild(k)}
+function bars(c,rows,max){rows.forEach(([l,n])=>{const r=el("div","row");r.appendChild(el("span",null,l));const b=el("div","bar"),i=el("i");i.style.width=(max?n/max*100:0)+"%";b.appendChild(i);r.appendChild(b);r.appendChild(el("span",null,String(n)));c.appendChild(r)})}
+$("go").onclick=async()=>{$("msg").textContent="";try{const r=await fetch("/api/admin/stats",{headers:{"X-Admin-Key":$("k").value}});if(!r.ok)throw new Error(r.status===403?"Wrong key, or ADMIN_KEY is not set on the server.":"Could not load stats.");const d=await r.json();draw(d)}catch(e){$("msg").textContent=e.message}};
+function draw(d){const o=$("out");o.textContent="";const g=el("div","grid");
+kpi(g,"Sessions started",d.sessions_started);kpi(g,"Completed",d.sessions_completed);kpi(g,"Completion rate",pct(d.completion_rate));kpi(g,"Avg readiness",val(d.avg_readiness));
+kpi(g,"Fairness 👍 rate",pct(d.fairness_thumbs.up_rate));kpi(g,"Integrity flag rate",pct(d.flag_rate));kpi(g,"Follow-up answered",pct(d.followup_answer_rate));kpi(g,"Avg follow-up quality",val(d.avg_followup_quality));
+kpi(g,"Avg scoring latency (s)",val(d.avg_scoring_latency_s));kpi(g,"Avg tokens per scoring call",val(d.avg_scoring_tokens));kpi(g,"Total scoring tokens",d.total_scoring_tokens);o.appendChild(g);
+let c=el("div","card");c.appendChild(el("b",null,"Drop-off by question (answered / reached)"));const mx=Math.max(1,...d.dropoff.map(x=>x.reached));bars(c,d.dropoff.map(x=>["Q"+x.question+": "+x.answered+"/"+x.reached,x.answered]),mx);o.appendChild(c);
+c=el("div","card");c.appendChild(el("b",null,"Sessions per day (last 14 days)"));bars(c,d.sessions_per_day.map(x=>[x.date.slice(5),x.sessions]),Math.max(1,...d.sessions_per_day.map(x=>x.sessions)));o.appendChild(c);
+c=el("div","card");c.appendChild(el("b",null,"Average readiness by topic"));const t=Object.entries(d.readiness_by_topic);if(!t.length)c.appendChild(el("p","mut","No completed sessions yet."));bars(c,t.map(([k,v])=>[k.slice(0,12)+" (n="+v.n+")",v.avg]),100);o.appendChild(c);
+c=el("div","card");c.appendChild(el("b",null,"Recent fairness comments"));if(!d.recent_comments.length)c.appendChild(el("p","mut","None yet."));d.recent_comments.forEach(x=>c.appendChild(el("p",null,(x.rating>0?"👍 ":"👎 ")+x.comment)));o.appendChild(c)}
+</script></body></html>
