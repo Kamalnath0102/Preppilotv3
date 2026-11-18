@@ -10,7 +10,6 @@ PrepPilot gives job-seeking engineers on-demand interview practice: **adaptive q
 **Job to be done:** "Tell me honestly how ready I am and what to do this week."
 Full details: [`docs/PRD.md`](docs/PRD.md) (goals, non-goals, prioritization, launch plan, pricing hypothesis).
 
-> **User research (fill in):** insights from 5+ interviews using [`docs/USER_RESEARCH.md`](docs/USER_RESEARCH.md). Add 3 to 4 findings with quotes, and what you changed because of them.
 
 ## 2. Features
 | Area | What it does |
