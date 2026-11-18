@@ -56,14 +56,17 @@ flowchart LR
 - **Cost controls.** Per-IP rate limit, per-user daily session cap, token tracking.
 
 ## 6. Evaluation
-Run `python -m evals.run_evals`. It scores 15 labelled answers twice each (strong, weak, don't-know, off-topic, prompt injection, non-native English) and reports expectation pass rate, strong-above-weak ranking and run-to-run variance. Run it with different `MODEL` values to compare models.
 
-_Paste your results table here, then write 2 to 3 sentences: what failed, what you changed in the prompt, and the before/after numbers._
+Run `python -m evals.run_evals`. It scores 15 labelled answers twice each (strong, weak, don't-know, off-topic, prompt injection, non-native English) and reports expectation pass rate, strong-above-weak ranking and run-to-run variance. Set `MODEL` to compare models.
 
 | Model | Pass rate | Strong > weak | Variance | Notes |
 |---|---|---|---|---|
-| _model A_ | | | | |
-| _model B_ | | | | |
+| openai/gpt-oss-120b (production) | 15/15 | 5/5 | 0.07 | Non-native answer 5/5; injection 1/1 |
+| openai/gpt-oss-20b | 15/15 | 5/5 | 0.00 | Non-native answer 4/4 vs 5/5 for the equivalent native answer |
+
+**Result:** both models passed every case, so I made no prompt changes. I kept gpt-oss-120b in production because it scored the non-native English answer the same as the native-English answer on the same question. The 20b model is smaller and more consistent, but it scored that answer one point lower, which could be fluency leaking into the score.
+
+**Limitation:** the eval is easy. Strong answers scored 5 and weak ones 1 or 2, so it checks the extremes and not borderline answers, and one non-native case is not enough to prove fairness. Next: add partially correct answers (expected score about 3) and more non-native cases, then compare against 2 to 3 human mentors on real answers.
 
 ## 7. What I learned from usage
 _After sharing with students, add 3 findings from the `/admin` dashboard (for example: where users drop off, fairness rate, flag rate) and what you did about each._
