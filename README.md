@@ -1,6 +1,6 @@
 # PrepPilot: AI mock interview coach
 
-> **Live demo:** _add your deployed URL_ · **Built by:** _your name_ · **Tests:** `pytest` (18 passing)
+> **Live demo:** https://preppilotv3.onrender.com/ · **Built by:** Kamalnath R · **Tests:** `pytest` (18 passing)
 
 PrepPilot gives job-seeking engineers on-demand interview practice: **adaptive questions, AI follow-ups, rubric-based scoring, a readiness score and a personalized 7-day study plan**, with progress tracked per user and a built-in analytics dashboard for the product owner.
 
